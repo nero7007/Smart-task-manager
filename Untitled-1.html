@@ -1,0 +1,1567 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>مدير المهام الذكي | Smart Task Manager</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --secondary: #ec4899;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #3b82f6;
+        --dark: #1e293b;
+        --light: #f8fafc;
+        --gray: #94a3b8;
+        --bg: #0f172a;
+        --card-bg: #1e293b;
+        --border: #334155;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Cairo", sans-serif;
+        background: var(--bg);
+        color: #e2e8f0;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* Animated Background */
+      .bg-animation {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        overflow: hidden;
+      }
+
+      .bg-animation .circle {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.15;
+        animation: float 20s infinite ease-in-out;
+      }
+
+      .bg-animation .circle:nth-child(1) {
+        width: 400px;
+        height: 400px;
+        background: var(--primary);
+        top: -100px;
+        right: -100px;
+        animation-delay: 0s;
+      }
+
+      .bg-animation .circle:nth-child(2) {
+        width: 300px;
+        height: 300px;
+        background: var(--secondary);
+        bottom: -50px;
+        left: -50px;
+        animation-delay: -5s;
+      }
+
+      .bg-animation .circle:nth-child(3) {
+        width: 250px;
+        height: 250px;
+        background: var(--info);
+        top: 50%;
+        left: 50%;
+        animation-delay: -10s;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1);
+        }
+        33% {
+          transform: translate(30px, -30px) scale(1.1);
+        }
+        66% {
+          transform: translate(-20px, 20px) scale(0.9);
+        }
+      }
+
+      /* Container */
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      /* Header */
+      .header {
+        text-align: center;
+        padding: 40px 20px;
+        position: relative;
+      }
+
+      .header h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 10px;
+        animation: glow 3s ease-in-out infinite alternate;
+      }
+
+      @keyframes glow {
+        from {
+          filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.3));
+        }
+        to {
+          filter: drop-shadow(0 0 30px rgba(236, 72, 153, 0.3));
+        }
+      }
+
+      .header p {
+        color: var(--gray);
+        font-size: 1.1rem;
+      }
+
+      /* Stats Bar */
+      .stats-bar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+      }
+
+      .stat-card:hover::before {
+        transform: scaleX(1);
+      }
+
+      .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .stat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+      }
+
+      .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: white;
+      }
+
+      .stat-label {
+        color: var(--gray);
+        font-size: 0.9rem;
+        margin-top: 5px;
+      }
+
+      /* Main Layout */
+      .main-layout {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 25px;
+        margin-bottom: 30px;
+      }
+
+      @media (max-width: 1024px) {
+        .main-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Cards */
+      .card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 25px;
+        margin-bottom: 25px;
+        transition: all 0.3s ease;
+      }
+
+      .card:hover {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .card-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .card-title i {
+        color: var(--primary);
+      }
+
+      /* Form Styles */
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #cbd5e1;
+      }
+
+      .form-input,
+      .form-select,
+      .form-textarea {
+        width: 100%;
+        padding: 14px 18px;
+        background: #0f172a;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        color: white;
+        font-family: "Cairo", sans-serif;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+      }
+
+      .form-input:focus,
+      .form-select:focus,
+      .form-textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      }
+
+      .form-textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .priority-select {
+        display: flex;
+        gap: 10px;
+      }
+
+      .priority-option {
+        flex: 1;
+        padding: 12px;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+      }
+
+      .priority-option.high {
+        border-color: var(--danger);
+        color: var(--danger);
+      }
+
+      .priority-option.medium {
+        border-color: var(--warning);
+        color: var(--warning);
+      }
+
+      .priority-option.low {
+        border-color: var(--success);
+        color: var(--success);
+      }
+
+      .priority-option.active.high {
+        background: var(--danger);
+        color: white;
+      }
+
+      .priority-option.active.medium {
+        background: var(--warning);
+        color: white;
+      }
+
+      .priority-option.active.low {
+        background: var(--success);
+        color: white;
+      }
+
+      .btn {
+        padding: 14px 28px;
+        border: none;
+        border-radius: 12px;
+        font-family: "Cairo", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+        width: 100%;
+        justify-content: center;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+      }
+
+      .btn-danger {
+        background: var(--danger);
+        color: white;
+        padding: 8px 14px;
+        font-size: 0.85rem;
+      }
+
+      .btn-success {
+        background: var(--success);
+        color: white;
+        padding: 8px 14px;
+        font-size: 0.85rem;
+      }
+
+      .btn-info {
+        background: var(--info);
+        color: white;
+        padding: 8px 14px;
+        font-size: 0.85rem;
+      }
+
+      /* Task List */
+      .task-filters {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .filter-btn {
+        padding: 8px 16px;
+        border: 2px solid var(--border);
+        background: transparent;
+        color: var(--gray);
+        border-radius: 25px;
+        cursor: pointer;
+        font-family: "Cairo", sans-serif;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .filter-btn.active,
+      .filter-btn:hover {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+      }
+
+      .task-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .task-item {
+        background: #0f172a;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .task-item::before {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        transition: all 0.3s ease;
+      }
+
+      .task-item.priority-high::before {
+        background: var(--danger);
+      }
+      .task-item.priority-medium::before {
+        background: var(--warning);
+      }
+      .task-item.priority-low::before {
+        background: var(--success);
+      }
+
+      .task-item:hover {
+        transform: translateX(-5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .task-item.completed {
+        opacity: 0.6;
+      }
+
+      .task-item.completed .task-title {
+        text-decoration: line-through;
+        color: var(--gray);
+      }
+
+      .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+      }
+
+      .task-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: white;
+        flex: 1;
+      }
+
+      .task-priority {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+
+      .priority-high {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--danger);
+      }
+      .priority-medium {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--warning);
+      }
+      .priority-low {
+        background: rgba(34, 197, 94, 0.2);
+        color: var(--success);
+      }
+
+      .task-meta {
+        display: flex;
+        gap: 15px;
+        color: var(--gray);
+        font-size: 0.85rem;
+        margin-bottom: 12px;
+      }
+
+      .task-meta span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .task-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .task-timer {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(59, 130, 246, 0.2);
+        color: var(--info);
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      /* Timer Section */
+      .timer-display {
+        font-size: 4rem;
+        font-weight: 800;
+        text-align: center;
+        color: white;
+        font-variant-numeric: tabular-nums;
+        margin: 20px 0;
+        text-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+      }
+
+      .timer-controls {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .timer-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .timer-btn:hover {
+        transform: scale(1.1);
+      }
+
+      .timer-btn.start {
+        background: var(--success);
+        color: white;
+      }
+      .timer-btn.pause {
+        background: var(--warning);
+        color: white;
+      }
+      .timer-btn.reset {
+        background: var(--danger);
+        color: white;
+      }
+
+      .timer-modes {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      .timer-mode {
+        padding: 8px 16px;
+        border: 2px solid var(--border);
+        background: transparent;
+        color: var(--gray);
+        border-radius: 25px;
+        cursor: pointer;
+        font-family: "Cairo", sans-serif;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .timer-mode.active {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+      }
+
+      /* Progress Ring */
+      .progress-ring-container {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+      }
+
+      .progress-ring {
+        transform: rotate(-90deg);
+      }
+
+      .progress-ring-circle {
+        transition: stroke-dashoffset 0.5s ease;
+      }
+
+      /* Chart */
+      .chart-container {
+        height: 200px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        gap: 10px;
+        padding: 20px 0;
+      }
+
+      .chart-bar {
+        flex: 1;
+        background: linear-gradient(to top, var(--primary), var(--secondary));
+        border-radius: 8px 8px 0 0;
+        min-height: 20px;
+        transition: all 0.5s ease;
+        position: relative;
+      }
+
+      .chart-bar:hover {
+        opacity: 0.8;
+      }
+
+      .chart-bar-label {
+        position: absolute;
+        bottom: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.75rem;
+        color: var(--gray);
+        white-space: nowrap;
+      }
+
+      .chart-bar-value {
+        position: absolute;
+        top: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: white;
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: var(--gray);
+      }
+
+      .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 15px;
+        opacity: 0.5;
+      }
+
+      /* Animations */
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .task-item {
+        animation: slideIn 0.3s ease forwards;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: var(--bg);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--primary);
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .header h1 {
+          font-size: 2rem;
+        }
+        .timer-display {
+          font-size: 2.5rem;
+        }
+        .stats-bar {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      /* Toast Notification */
+      .toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--card-bg);
+        border: 1px solid var(--primary);
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        z-index: 1000;
+        transition: all 0.3s ease;
+        opacity: 0;
+      }
+
+      .toast.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+
+      /* Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s ease;
+      }
+
+      .modal-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .modal {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        transform: scale(0.9);
+        transition: all 0.3s ease;
+      }
+
+      .modal-overlay.active .modal {
+        transform: scale(1);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        color: var(--gray);
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: color 0.3s;
+      }
+
+      .modal-close:hover {
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-animation">
+      <div class="circle"></div>
+      <div class="circle"></div>
+      <div class="circle"></div>
+    </div>
+
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h1><i class="fas fa-tasks"></i> مدير المهام الذكي</h1>
+        <p>نظم يومك، حقق أهدافك، وارتقِ بإنتاجيتك</p>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-icon">📋</div>
+          <div class="stat-value" id="totalTasks">0</div>
+          <div class="stat-label">إجمالي المهام</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-value" id="pendingTasks">0</div>
+          <div class="stat-label">قيد الانتظار</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🔄</div>
+          <div class="stat-value" id="inProgressTasks">0</div>
+          <div class="stat-label">قيد التنفيذ</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value" id="completedTasks">0</div>
+          <div class="stat-label">مكتملة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📊</div>
+          <div class="stat-value" id="completionRate">0%</div>
+          <div class="stat-label">نسبة الإنجاز</div>
+        </div>
+      </div>
+
+      <!-- Main Layout -->
+      <div class="main-layout">
+        <!-- Left Column -->
+        <div class="left-column">
+          <!-- Add Task Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fas fa-plus-circle"></i>
+                إضافة مهمة جديدة
+              </div>
+            </div>
+            <form id="taskForm">
+              <div class="form-group">
+                <label class="form-label">عنوان المهمة</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  id="taskTitle"
+                  placeholder="مثال: إنهاء تقرير المبيعات"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">الوصف (اختياري)</label>
+                <textarea
+                  class="form-textarea"
+                  id="taskDesc"
+                  placeholder="تفاصيل إضافية عن المهمة..."
+                ></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">الأولوية</label>
+                <div class="priority-select">
+                  <div class="priority-option high" data-priority="high">
+                    عالية 🔴
+                  </div>
+                  <div
+                    class="priority-option medium active"
+                    data-priority="medium"
+                  >
+                    متوسطة 🟡
+                  </div>
+                  <div class="priority-option low" data-priority="low">
+                    منخفضة 🟢
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">تاريخ الاستحقاق</label>
+                <input
+                  type="date"
+                  class="form-input"
+                  id="taskDueDate"
+                  required
+                />
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                إضافة المهمة
+              </button>
+            </form>
+          </div>
+
+          <!-- Tasks List Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fas fa-list-check"></i>
+                قائمة المهام
+              </div>
+            </div>
+            <div class="task-filters">
+              <button class="filter-btn active" data-filter="all">الكل</button>
+              <button class="filter-btn" data-filter="pending">
+                قيد الانتظار
+              </button>
+              <button class="filter-btn" data-filter="in-progress">
+                قيد التنفيذ
+              </button>
+              <button class="filter-btn" data-filter="completed">مكتملة</button>
+            </div>
+            <div class="task-list" id="taskList">
+              <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <p>لا توجد مهام حالياً. أضف أول مهمة لك!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-column">
+          <!-- Timer Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fas fa-clock"></i>
+                مؤقت التركيز
+              </div>
+            </div>
+
+            <div class="progress-ring-container">
+              <svg class="progress-ring" width="200" height="200">
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="90"
+                  fill="none"
+                  stroke="#334155"
+                  stroke-width="8"
+                ></circle>
+                <circle
+                  class="progress-ring-circle"
+                  cx="100"
+                  cy="100"
+                  r="90"
+                  fill="none"
+                  stroke="url(#gradient)"
+                  stroke-width="8"
+                  stroke-linecap="round"
+                  stroke-dasharray="565.48"
+                  stroke-dashoffset="0"
+                ></circle>
+                <defs>
+                  <linearGradient
+                    id="gradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="0%"
+                  >
+                    <stop offset="0%" stop-color="#6366f1" />
+                    <stop offset="100%" stop-color="#ec4899" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+
+            <div class="timer-display" id="timerDisplay">25:00</div>
+
+            <div class="timer-controls">
+              <button
+                class="timer-btn start"
+                id="timerStart"
+                onclick="startTimer()"
+              >
+                <i class="fas fa-play"></i>
+              </button>
+              <button
+                class="timer-btn pause"
+                id="timerPause"
+                onclick="pauseTimer()"
+                style="display: none"
+              >
+                <i class="fas fa-pause"></i>
+              </button>
+              <button class="timer-btn reset" onclick="resetTimer()">
+                <i class="fas fa-redo"></i>
+              </button>
+            </div>
+
+            <div class="timer-modes">
+              <button class="timer-mode active" data-time="25">
+                تركيز 25د
+              </button>
+              <button class="timer-mode" data-time="5">استراحة 5د</button>
+              <button class="timer-mode" data-time="15">استراحة طويلة</button>
+            </div>
+          </div>
+
+          <!-- Weekly Stats Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fas fa-chart-bar"></i>
+                إنجازات الأسبوع
+              </div>
+            </div>
+            <div class="chart-container" id="weeklyChart">
+              <!-- Generated by JS -->
+            </div>
+          </div>
+
+          <!-- Productivity Tips -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fas fa-lightbulb"></i>
+                نصيحة اليوم
+              </div>
+            </div>
+            <div
+              id="dailyTip"
+              style="
+                color: #cbd5e1;
+                line-height: 1.8;
+                text-align: center;
+                padding: 10px;
+              "
+            >
+              ابدأ يومك بأهم مهمة (الضفدع) - إنجاز المهام الصعبة أولاً يمنحك
+              طاقة إيجابية لباقي اليوم!
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="modalTitle">تفاصيل المهمة</h3>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div id="modalContent"></div>
+      </div>
+    </div>
+
+    <script>
+      // ===== STATE MANAGEMENT =====
+      let tasks = JSON.parse(localStorage.getItem("smartTasks")) || [];
+      let currentFilter = "all";
+      let selectedPriority = "medium";
+      let timerInterval = null;
+      let timerSeconds = 25 * 60;
+      let timerRunning = false;
+      let timerMode = 25;
+      let activeTaskTimer = null;
+
+      // ===== INITIALIZATION =====
+      document.addEventListener("DOMContentLoaded", () => {
+        renderTasks();
+        updateStats();
+        renderWeeklyChart();
+        setupEventListeners();
+        loadDailyTip();
+      });
+
+      // ===== EVENT LISTENERS =====
+      function setupEventListeners() {
+        // Priority selection
+        document.querySelectorAll(".priority-option").forEach((opt) => {
+          opt.addEventListener("click", () => {
+            document
+              .querySelectorAll(".priority-option")
+              .forEach((o) => o.classList.remove("active"));
+            opt.classList.add("active");
+            selectedPriority = opt.dataset.priority;
+          });
+        });
+
+        // Filter buttons
+        document.querySelectorAll(".filter-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll(".filter-btn")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentFilter = btn.dataset.filter;
+            renderTasks();
+          });
+        });
+
+        // Timer modes
+        document.querySelectorAll(".timer-mode").forEach((mode) => {
+          mode.addEventListener("click", () => {
+            document
+              .querySelectorAll(".timer-mode")
+              .forEach((m) => m.classList.remove("active"));
+            mode.classList.add("active");
+            timerMode = parseInt(mode.dataset.time);
+            resetTimer();
+          });
+        });
+
+        // Form submission
+        document.getElementById("taskForm").addEventListener("submit", addTask);
+
+        // Set default date to today
+        document.getElementById("taskDueDate").valueAsDate = new Date();
+      }
+
+      // ===== TASK MANAGEMENT =====
+      function addTask(e) {
+        e.preventDefault();
+
+        const title = document.getElementById("taskTitle").value.trim();
+        const desc = document.getElementById("taskDesc").value.trim();
+        const dueDate = document.getElementById("taskDueDate").value;
+
+        if (!title) return;
+
+        const task = {
+          id: Date.now(),
+          title,
+          description: desc,
+          priority: selectedPriority,
+          dueDate,
+          status: "pending",
+          createdAt: new Date().toISOString(),
+          completedAt: null,
+          timeSpent: 0,
+          timerRunning: false,
+        };
+
+        tasks.push(task);
+        saveTasks();
+        renderTasks();
+        updateStats();
+        renderWeeklyChart();
+
+        // Reset form
+        document.getElementById("taskForm").reset();
+        document.getElementById("taskDueDate").valueAsDate = new Date();
+
+        showToast("✅ تم إضافة المهمة بنجاح!");
+      }
+
+      function deleteTask(id) {
+        if (confirm("هل أنت متأكد من حذف هذه المهمة؟")) {
+          tasks = tasks.filter((t) => t.id !== id);
+          saveTasks();
+          renderTasks();
+          updateStats();
+          renderWeeklyChart();
+          showToast("🗑️ تم حذف المهمة");
+        }
+      }
+
+      function toggleTaskStatus(id) {
+        const task = tasks.find((t) => t.id === id);
+        if (!task) return;
+
+        if (task.status === "completed") {
+          task.status = "pending";
+          task.completedAt = null;
+        } else if (task.status === "pending") {
+          task.status = "in-progress";
+        } else if (task.status === "in-progress") {
+          task.status = "completed";
+          task.completedAt = new Date().toISOString();
+          showToast("🎉 أحسنت! لقد أكملت مهمة!");
+        }
+
+        saveTasks();
+        renderTasks();
+        updateStats();
+        renderWeeklyChart();
+      }
+
+      function startTaskTimer(id) {
+        const task = tasks.find((t) => t.id === id);
+        if (!task) return;
+
+        // Stop other timers
+        tasks.forEach((t) => {
+          if (t.id !== id && t.timerRunning) {
+            t.timerRunning = false;
+          }
+        });
+
+        task.timerRunning = true;
+        saveTasks();
+        renderTasks();
+        showToast(`⏱️ تم بدء التتبع: ${task.title}`);
+      }
+
+      function stopTaskTimer(id) {
+        const task = tasks.find((t) => t.id === id);
+        if (!task) return;
+        task.timerRunning = false;
+        saveTasks();
+        renderTasks();
+      }
+
+      // ===== RENDERING =====
+      function renderTasks() {
+        const list = document.getElementById("taskList");
+        let filtered = tasks;
+
+        if (currentFilter !== "all") {
+          filtered = tasks.filter((t) => t.status === currentFilter);
+        }
+
+        // Sort: high priority first, then by date
+        filtered.sort((a, b) => {
+          const priorityOrder = { high: 3, medium: 2, low: 1 };
+          if (priorityOrder[b.priority] !== priorityOrder[a.priority]) {
+            return priorityOrder[b.priority] - priorityOrder[a.priority];
+          }
+          return new Date(a.dueDate) - new Date(b.dueDate);
+        });
+
+        if (filtered.length === 0) {
+          list.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <p>لا توجد مهام في هذا القسم</p>
+                    </div>
+                `;
+          return;
+        }
+
+        list.innerHTML = filtered
+          .map((task) => {
+            const priorityLabels = {
+              high: "عالية",
+              medium: "متوسطة",
+              low: "منخفضة",
+            };
+            const statusIcons = {
+              pending: "⏳",
+              "in-progress": "🔄",
+              completed: "✅",
+            };
+            const statusLabels = {
+              pending: "قيد الانتظار",
+              "in-progress": "قيد التنفيذ",
+              completed: "مكتملة",
+            };
+
+            const isCompleted = task.status === "completed";
+            const timeDisplay =
+              task.timeSpent > 0 ? formatTime(task.timeSpent) : "";
+
+            return `
+                    <div class="task-item priority-${task.priority} ${isCompleted ? "completed" : ""}" style="animation-delay: ${Math.random() * 0.3}s">
+                        <div class="task-header">
+                            <div class="task-title">${statusIcons[task.status]} ${task.title}</div>
+                            <span class="task-priority priority-${task.priority}">${priorityLabels[task.priority]}</span>
+                        </div>
+                        ${task.description ? `<p style="color: #94a3b8; margin-bottom: 10px; font-size: 0.9rem;">${task.description}</p>` : ""}
+                        <div class="task-meta">
+                            <span><i class="fas fa-calendar"></i> ${formatDate(task.dueDate)}</span>
+                            <span><i class="fas fa-flag"></i> ${statusLabels[task.status]}</span>
+                            ${timeDisplay ? `<span><i class="fas fa-stopwatch"></i> ${timeDisplay}</span>` : ""}
+                        </div>
+                        <div class="task-actions">
+                            ${
+                              !isCompleted
+                                ? `
+                                <button class="btn ${task.status === "pending" ? "btn-info" : "btn-success"}" onclick="toggleTaskStatus(${task.id})">
+                                    <i class="fas ${task.status === "pending" ? "fa-play" : "fa-check"}"></i>
+                                    ${task.status === "pending" ? "ابدأ" : "أكمل"}
+                                </button>
+                            `
+                                : `
+                                <button class="btn btn-info" onclick="toggleTaskStatus(${task.id})">
+                                    <i class="fas fa-undo"></i> إعادة
+                                </button>
+                            `
+                            }
+                            ${
+                              task.status === "in-progress"
+                                ? `
+                                <button class="btn ${task.timerRunning ? "btn-danger" : "btn-success"}" onclick="${task.timerRunning ? `stopTaskTimer(${task.id})` : `startTaskTimer(${task.id})`}">
+                                    <i class="fas ${task.timerRunning ? "fa-pause" : "fa-play"}"></i>
+                                    ${task.timerRunning ? "إيقاف" : "تتبع الوقت"}
+                                </button>
+                            `
+                                : ""
+                            }
+                            <button class="btn btn-danger" onclick="deleteTask(${task.id})">
+                                <i class="fas fa-trash"></i> حذف
+                            </button>
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+      }
+
+      function updateStats() {
+        const total = tasks.length;
+        const pending = tasks.filter((t) => t.status === "pending").length;
+        const inProgress = tasks.filter(
+          (t) => t.status === "in-progress",
+        ).length;
+        const completed = tasks.filter((t) => t.status === "completed").length;
+        const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+        animateValue(
+          "totalTasks",
+          parseInt(document.getElementById("totalTasks").textContent),
+          total,
+          500,
+        );
+        animateValue(
+          "pendingTasks",
+          parseInt(document.getElementById("pendingTasks").textContent),
+          pending,
+          500,
+        );
+        animateValue(
+          "inProgressTasks",
+          parseInt(document.getElementById("inProgressTasks").textContent),
+          inProgress,
+          500,
+        );
+        animateValue(
+          "completedTasks",
+          parseInt(document.getElementById("completedTasks").textContent),
+          completed,
+          500,
+        );
+        document.getElementById("completionRate").textContent = rate + "%";
+      }
+
+      function animateValue(id, start, end, duration) {
+        const obj = document.getElementById(id);
+        const range = end - start;
+        const minTimer = 50;
+        let stepTime = Math.abs(Math.floor(duration / range));
+        stepTime = Math.max(stepTime, minTimer);
+        let startTime = new Date().getTime();
+        let endTime = startTime + duration;
+        let timer;
+
+        function run() {
+          let now = new Date().getTime();
+          let remaining = Math.max((endTime - now) / duration, 0);
+          let value = Math.round(end - remaining * range);
+          obj.innerHTML = value;
+          if (value == end) clearInterval(timer);
+        }
+
+        timer = setInterval(run, stepTime);
+        run();
+      }
+
+      // ===== TIMER FUNCTIONS =====
+      function startTimer() {
+        if (timerRunning) return;
+        timerRunning = true;
+        document.getElementById("timerStart").style.display = "none";
+        document.getElementById("timerPause").style.display = "flex";
+
+        timerInterval = setInterval(() => {
+          if (timerSeconds > 0) {
+            timerSeconds--;
+            updateTimerDisplay();
+            updateProgressRing();
+
+            // Update active task timer
+            const activeTask = tasks.find((t) => t.timerRunning);
+            if (activeTask) {
+              activeTask.timeSpent++;
+              saveTasks();
+            }
+          } else {
+            pauseTimer();
+            showToast("⏰ انتهى الوقت! خذ استراحة قصيرة.");
+            playNotificationSound();
+          }
+        }, 1000);
+      }
+
+      function pauseTimer() {
+        timerRunning = false;
+        clearInterval(timerInterval);
+        document.getElementById("timerStart").style.display = "flex";
+        document.getElementById("timerPause").style.display = "none";
+      }
+
+      function resetTimer() {
+        pauseTimer();
+        timerSeconds = timerMode * 60;
+        updateTimerDisplay();
+        updateProgressRing();
+      }
+
+      function updateTimerDisplay() {
+        const mins = Math.floor(timerSeconds / 60);
+        const secs = timerSeconds % 60;
+        document.getElementById("timerDisplay").textContent =
+          `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+      }
+
+      function updateProgressRing() {
+        const circle = document.querySelector(".progress-ring-circle");
+        const totalSeconds = timerMode * 60;
+        const progress = timerSeconds / totalSeconds;
+        const circumference = 2 * Math.PI * 90;
+        const offset = circumference - progress * circumference;
+        circle.style.strokeDashoffset = offset;
+      }
+
+      // ===== WEEKLY CHART =====
+      function renderWeeklyChart() {
+        const container = document.getElementById("weeklyChart");
+        const days = [
+          "الأحد",
+          "الإثنين",
+          "الثلاثاء",
+          "الأربعاء",
+          "الخميس",
+          "الجمعة",
+          "السبت",
+        ];
+        const today = new Date().getDay();
+
+        // Generate mock data based on completed tasks
+        const data = days.map((_, i) => {
+          const dayTasks = tasks.filter((t) => {
+            if (!t.completedAt) return false;
+            const completedDate = new Date(t.completedAt);
+            const dayDiff = (today - completedDate.getDay() + 7) % 7;
+            return dayDiff === (today - i + 7) % 7;
+          });
+          return dayTasks.length + Math.floor(Math.random() * 3); // Add some variation
+        });
+
+        const max = Math.max(...data, 1);
+
+        container.innerHTML = days
+          .map(
+            (day, i) => `
+                <div class="chart-bar" style="height: ${(data[i] / max) * 100}%;">
+                    <div class="chart-bar-value">${data[i]}</div>
+                    <div class="chart-bar-label">${day}</div>
+                </div>
+            `,
+          )
+          .join("");
+      }
+
+      // ===== DAILY TIPS =====
+      const tips = [
+        "ابدأ يومك بأهم مهمة (الضفدع) - إنجاز المهام الصعبة أولاً يمنحك طاقة إيجابية!",
+        "استخدم تقنية البومودورو: 25 دقيقة تركيز، ثم 5 دقائق استراحة.",
+        "قسّم المهام الكبيرة إلى مهام صغيرة يمكن إنجازها.",
+        "احذف المهام غير الضرورية - التركيز على الأهم هو مفتاح النجاح.",
+        "خصص وقتًا ثابتًا كل يوم للمهام المهمة، وليس المستعجلة فقط.",
+        "استخدم قائمة المهام اليومية ولا تضع أكثر من 3-5 مهام رئيسية.",
+        "خذ استراحة كل 90 دقيقة للحفاظ على إنتاجيتك العقلية.",
+        "راجع إنجازاتك اليومية قبل النوم - الامتنان يزيد الإنتاجية.",
+      ];
+
+      function loadDailyTip() {
+        const dayOfYear = Math.floor(
+          (new Date() - new Date(new Date().getFullYear(), 0, 0)) /
+            1000 /
+            60 /
+            60 /
+            24,
+        );
+        document.getElementById("dailyTip").textContent =
+          tips[dayOfYear % tips.length];
+      }
+
+      // ===== UTILITY FUNCTIONS =====
+      function saveTasks() {
+        localStorage.setItem("smartTasks", JSON.stringify(tasks));
+      }
+
+      function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        if (date.toDateString() === today.toDateString()) return "اليوم";
+        if (date.toDateString() === tomorrow.toDateString()) return "غداً";
+
+        return date.toLocaleDateString("ar-SA", {
+          month: "short",
+          day: "numeric",
+        });
+      }
+
+      function formatTime(seconds) {
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        if (hrs > 0) return `${hrs}س ${mins}د`;
+        return `${mins}د`;
+      }
+
+      function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 3000);
+      }
+
+      function playNotificationSound() {
+        // Simple beep using Web Audio API
+        const audioContext = new (
+          window.AudioContext || window.webkitAudioContext
+        )();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = 800;
+        oscillator.type = "sine";
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(
+          0.01,
+          audioContext.currentTime + 0.5,
+        );
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+      }
+
+      function openModal(title, content) {
+        document.getElementById("modalTitle").textContent = title;
+        document.getElementById("modalContent").innerHTML = content;
+        document.getElementById("modal").classList.add("active");
+      }
+
+      function closeModal() {
+        document.getElementById("modal").classList.remove("active");
+      }
+
+      // Close modal on overlay click
+      document.getElementById("modal").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("modal")) closeModal();
+      });
+    </script>
+  </body>
+</html>
